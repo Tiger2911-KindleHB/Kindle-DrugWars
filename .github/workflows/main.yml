@@ -1,0 +1,80 @@
+name: Kindle PW12 kindlehf build
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-kindlehf:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore script permissions
+        run: |
+          chmod +x scripts/*.sh
+          chmod +x extension/kindledopewars/bin/launch.sh
+
+      - name: Install host packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            git \
+            libarchive-dev \
+            libbz2-dev \
+            libgmp-dev \
+            liblzma-dev \
+            libnettle-dev \
+            libssl-dev \
+            meson \
+            ninja-build \
+            pkg-config \
+            python3 \
+            wget \
+            xz-utils \
+            zip \
+            zlib1g-dev
+
+      - name: Install prebuilt KOReader kindlehf toolchain
+        run: |
+          set -euxo pipefail
+          mkdir -p "$HOME/x-tools"
+          wget -O /tmp/kindlehf.tar.gz "https://github.com/koreader/koxtoolchain/releases/download/2025.05/kindlehf.tar.gz"
+          tar -xzf /tmp/kindlehf.tar.gz -C "$HOME"
+          echo "$HOME/x-tools/arm-kindlehf-linux-gnueabihf/bin" >> "$GITHUB_PATH"
+          test -x "$HOME/x-tools/arm-kindlehf-linux-gnueabihf/bin/arm-kindlehf-linux-gnueabihf-g++"
+
+      - name: Install Kindle SDK libraries and pkg-config files
+        run: |
+          set -euxo pipefail
+          git clone --recursive --depth=1 https://github.com/KindleModding/kindle-sdk.git /tmp/kindle-sdk
+          cd /tmp/kindle-sdk
+          chmod +x ./gen-sdk.sh
+          ./gen-sdk.sh kindlehf
+          cd "$GITHUB_WORKSPACE"
+          if [ ! -f "$HOME/x-tools/arm-kindlehf-linux-gnueabihf/meson-crosscompile.txt" ]; then
+            bash ./scripts/write-meson-crossfile.sh "$HOME/x-tools/arm-kindlehf-linux-gnueabihf"
+          fi
+
+      - name: Configure Meson
+        run: |
+          set -euxo pipefail
+          CROSS_FILE="$HOME/x-tools/arm-kindlehf-linux-gnueabihf/meson-crosscompile.txt"
+          cat "$CROSS_FILE"
+          meson setup --cross-file "$CROSS_FILE" builddir_kindlehf
+
+      - name: Compile
+        run: meson compile -C builddir_kindlehf
+
+      - name: Package KUAL extension
+        run: bash ./scripts/package-kual.sh ./builddir_kindlehf/kindledopewars
+
+      - name: Upload KUAL zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: kindledopewars-kual
+          path: dist/kindledopewars-kual.zip
