@@ -2,8 +2,11 @@
 <extension>
   <information>
     <name>Dope Wars Kindle</name>
-    <version>0.1.0</version>
+    <version>0.1.3</version>
     <author>Nick Garske / ChatGPT</author>
     <id>kindledopewars</id>
   </information>
+  <menus>
+    <menu type="json" dynamic="true">menu.json</menu>
+  </menus>
 </extension>
