@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.6 - Kindle UI Scale Reduction
+
+- Reduced the main-screen font scale so the top stat bar, New/Settings/Exit buttons, table, and bottom action buttons fit inside the visible Kindle screen.
+- Lowered the height and text size of Buy/Sell/Travel/Bank controls so their labels are not clipped at the bottom edge.
+- Reduced the location header and news/event area height to free vertical space for the item table and bottom controls.
+- Fixed compact stat font scaling so long values shrink instead of accidentally growing larger than the requested base size.
+- Added a small top spacer and reduced root padding/spacing to avoid top-row clipping while preserving usable vertical space.
+
 ## 0.1.5 - User Layout Pass
 
 - Rebuilt the main market screen to match the supplied Kindle UI mockup: top stat bar, left cash/debt/debt-days block, centered current location block, tappable news area, item/price/held table, and bottom Buy/Sell/Travel/Bank controls.

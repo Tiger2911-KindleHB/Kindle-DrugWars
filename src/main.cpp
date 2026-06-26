@@ -605,13 +605,13 @@ public:
         return true;
     }
 
-    void apply_font(GtkWidget* w, int size = 16) {
+    void apply_font(GtkWidget* w, int size = 10) {
         PangoFontDescription* desc = pango_font_description_from_string((std::string("Sans ") + std::to_string(size)).c_str());
         gtk_widget_modify_font(w, desc);
         pango_font_description_free(desc);
     }
 
-    GtkWidget* label(const std::string& text, int size = 16, bool wrap = true,
+    GtkWidget* label(const std::string& text, int size = 10, bool wrap = true,
                      float xalign = 0.0f, GtkJustification justify = GTK_JUSTIFY_LEFT) {
         GtkWidget* l = gtk_label_new(text.c_str());
         gtk_label_set_line_wrap(GTK_LABEL(l), wrap ? TRUE : FALSE);
@@ -622,26 +622,26 @@ public:
         return l;
     }
 
-    int compact_font_for(const std::string& text, int base = 15) const {
-        if (text.size() > 22) return std::max(9, base - 5);
-        if (text.size() > 18) return std::max(10, base - 4);
-        if (text.size() > 14) return std::max(11, base - 3);
-        if (text.size() > 11) return std::max(12, base - 2);
+    int compact_font_for(const std::string& text, int base = 10) const {
+        if (text.size() > 22) return std::max(6, base - 4);
+        if (text.size() > 18) return std::max(7, base - 3);
+        if (text.size() > 14) return std::max(8, base - 2);
+        if (text.size() > 11) return std::max(8, base - 1);
         return base;
     }
 
     GtkWidget* stat_label(const std::string& text) {
-        GtkWidget* l = label(text, compact_font_for(text, 15), false, 0.0f, GTK_JUSTIFY_LEFT);
-        gtk_widget_set_size_request(l, 86, 28);
+        GtkWidget* l = label(text, compact_font_for(text, 9), false, 0.0f, GTK_JUSTIFY_LEFT);
+        gtk_widget_set_size_request(l, 78, 22);
         return l;
     }
 
-    GtkWidget* centered_label(const std::string& text, int size = 16, bool wrap = true) {
+    GtkWidget* centered_label(const std::string& text, int size = 10, bool wrap = true) {
         return label(text, size, wrap, 0.5f, GTK_JUSTIFY_CENTER);
     }
 
-    GtkWidget* button(const std::string& text, GCallback cb, gpointer data = nullptr, int size = 15,
-                      int min_width = -1, int min_height = 34) {
+    GtkWidget* button(const std::string& text, GCallback cb, gpointer data = nullptr, int size = 10,
+                      int min_width = -1, int min_height = 28) {
         GtkWidget* b = gtk_button_new_with_label(text.c_str());
         apply_font(b, size);
         GtkWidget* child = gtk_bin_get_child(GTK_BIN(b));
@@ -667,6 +667,11 @@ public:
         g_list_free(children);
     }
 
+    GtkWidget* vertical_spacer(int height) {
+        GtkWidget* spacer = gtk_label_new("");
+        gtk_widget_set_size_request(spacer, -1, height);
+        return spacer;
+    }
 
     std::string stats_line() const {
         std::ostringstream ss;
@@ -706,63 +711,64 @@ public:
         gtk_box_pack_start(GTK_BOX(top), stat_label("Health: " + std::to_string(health)), TRUE, TRUE, 0);
         gtk_box_pack_start(GTK_BOX(top), stat_label("Coat: " + std::to_string(used_space()) + "/" + std::to_string(capacity)), TRUE, TRUE, 0);
         gtk_box_pack_start(GTK_BOX(top), stat_label("Bank: " + money(bank)), TRUE, TRUE, 0);
-        gtk_box_pack_start(GTK_BOX(top), button("New", G_CALLBACK(on_confirm_new), nullptr, 14, 58, 30), FALSE, FALSE, 0);
-        gtk_box_pack_start(GTK_BOX(top), button("Settings", G_CALLBACK(on_show_settings), nullptr, 13, 82, 30), FALSE, FALSE, 0);
-        gtk_box_pack_start(GTK_BOX(top), button("Exit", G_CALLBACK(on_exit), nullptr, 14, 54, 30), FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(top), button("New", G_CALLBACK(on_confirm_new), nullptr, 9, 46, 24), FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(top), button("Settings", G_CALLBACK(on_show_settings), nullptr, 8, 64, 24), FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(top), button("Exit", G_CALLBACK(on_exit), nullptr, 9, 42, 24), FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(root), vertical_spacer(6), FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(root), top, FALSE, FALSE, 0);
-        gtk_box_pack_start(GTK_BOX(root), hline(), FALSE, FALSE, 1);
+        gtk_box_pack_start(GTK_BOX(root), hline(), FALSE, FALSE, 0);
 
         GtkWidget* summary = gtk_hbox_new(FALSE, 8);
         GtkWidget* money_box = gtk_vbox_new(FALSE, 1);
-        gtk_box_pack_start(GTK_BOX(money_box), label("Cash: " + money(cash), compact_font_for("Cash: " + money(cash), 15), false), FALSE, FALSE, 0);
-        gtk_box_pack_start(GTK_BOX(money_box), label("Debt: " + money(debt), compact_font_for("Debt: " + money(debt), 15), false), FALSE, FALSE, 0);
-        gtk_box_pack_start(GTK_BOX(money_box), label("Debt Days: " + std::to_string(negative_days) + "/" + std::to_string(NEGATIVE_LIMIT), 15, false), FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(money_box), label("Cash: " + money(cash), compact_font_for("Cash: " + money(cash), 11), false), FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(money_box), label("Debt: " + money(debt), compact_font_for("Debt: " + money(debt), 11), false), FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(money_box), label("Debt Days: " + std::to_string(negative_days) + "/" + std::to_string(NEGATIVE_LIMIT), 11, false), FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(summary), money_box, FALSE, FALSE, 4);
         gtk_box_pack_start(GTK_BOX(summary), gtk_vseparator_new(), FALSE, FALSE, 8);
-        GtkWidget* loc = centered_label(LOCATIONS[location], compact_font_for(LOCATIONS[location], 30), false);
+        GtkWidget* loc = centered_label(LOCATIONS[location], compact_font_for(LOCATIONS[location], 22), false);
         gtk_box_pack_start(GTK_BOX(summary), loc, TRUE, TRUE, 4);
         gtk_box_pack_start(GTK_BOX(root), summary, FALSE, FALSE, 0);
-        gtk_box_pack_start(GTK_BOX(root), hline(), FALSE, FALSE, 2);
+        gtk_box_pack_start(GTK_BOX(root), hline(), FALSE, FALSE, 0);
 
         GtkWidget* news_box = gtk_event_box_new();
-        gtk_widget_set_size_request(news_box, -1, 82);
-        GtkWidget* news_label = label(event_text(), 18, true, 0.5f, GTK_JUSTIFY_FILL);
+        gtk_widget_set_size_request(news_box, -1, 58);
+        GtkWidget* news_label = label(event_text(), 11, true, 0.5f, GTK_JUSTIFY_FILL);
         gtk_container_add(GTK_CONTAINER(news_box), news_label);
         g_object_set_data(G_OBJECT(news_box), "app", this);
         g_signal_connect(news_box, "button-press-event", G_CALLBACK(on_news_tap), nullptr);
-        gtk_box_pack_start(GTK_BOX(root), news_box, FALSE, FALSE, 2);
-        gtk_box_pack_start(GTK_BOX(root), hline(), FALSE, FALSE, 2);
+        gtk_box_pack_start(GTK_BOX(root), news_box, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(root), hline(), FALSE, FALSE, 0);
 
         GtkWidget* scroller = gtk_scrolled_window_new(nullptr, nullptr);
         gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroller), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
         GtkWidget* table = gtk_table_new(ITEM_COUNT + 1, 3, FALSE);
         gtk_table_set_row_spacings(GTK_TABLE(table), 1);
         gtk_table_set_col_spacings(GTK_TABLE(table), 4);
-        gtk_table_attach_defaults(GTK_TABLE(table), centered_label("Item", 15, false), 0, 1, 0, 1);
-        gtk_table_attach_defaults(GTK_TABLE(table), centered_label("Price", 15, false), 1, 2, 0, 1);
-        gtk_table_attach_defaults(GTK_TABLE(table), centered_label("Held", 15, false), 2, 3, 0, 1);
+        gtk_table_attach_defaults(GTK_TABLE(table), centered_label("Item", 10, false), 0, 1, 0, 1);
+        gtk_table_attach_defaults(GTK_TABLE(table), centered_label("Price", 10, false), 1, 2, 0, 1);
+        gtk_table_attach_defaults(GTK_TABLE(table), centered_label("Held", 10, false), 2, 3, 0, 1);
         for (int i = 0; i < ITEM_COUNT; ++i) {
             std::string name = (i == selected ? "> " : "") + std::string(ITEM_DEFS[i].name);
-            gtk_table_attach_defaults(GTK_TABLE(table), button(name, G_CALLBACK(on_select_item), GINT_TO_POINTER(i), 12, -1, 28), 0, 1, i + 1, i + 2);
-            gtk_table_attach_defaults(GTK_TABLE(table), centered_label(money(price[i]), compact_font_for(money(price[i]), 13), false), 1, 2, i + 1, i + 2);
-            gtk_table_attach_defaults(GTK_TABLE(table), centered_label(std::to_string(held[i]), 13, false), 2, 3, i + 1, i + 2);
+            gtk_table_attach_defaults(GTK_TABLE(table), button(name, G_CALLBACK(on_select_item), GINT_TO_POINTER(i), 9, -1, 22), 0, 1, i + 1, i + 2);
+            gtk_table_attach_defaults(GTK_TABLE(table), centered_label(money(price[i]), compact_font_for(money(price[i]), 10), false), 1, 2, i + 1, i + 2);
+            gtk_table_attach_defaults(GTK_TABLE(table), centered_label(std::to_string(held[i]), 10, false), 2, 3, i + 1, i + 2);
         }
         gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(scroller), table);
-        gtk_box_pack_start(GTK_BOX(root), scroller, TRUE, TRUE, 1);
+        gtk_box_pack_start(GTK_BOX(root), scroller, TRUE, TRUE, 0);
 
-        GtkWidget* buy_row = gtk_hbox_new(TRUE, 10);
-        gtk_box_pack_start(GTK_BOX(buy_row), button("Buy 1", G_CALLBACK(on_buy), GINT_TO_POINTER(1), 16, -1, 44), TRUE, TRUE, 1);
-        gtk_box_pack_start(GTK_BOX(buy_row), button("Buy 10", G_CALLBACK(on_buy), GINT_TO_POINTER(10), 16, -1, 44), TRUE, TRUE, 1);
-        gtk_box_pack_start(GTK_BOX(buy_row), button("Buy Max", G_CALLBACK(on_buy), GINT_TO_POINTER(9999), 15, -1, 44), TRUE, TRUE, 1);
-        gtk_box_pack_start(GTK_BOX(buy_row), button("Travel", G_CALLBACK(on_show_travel), nullptr, 22, -1, 44), TRUE, TRUE, 1);
-        gtk_box_pack_start(GTK_BOX(root), buy_row, FALSE, FALSE, 2);
+        GtkWidget* buy_row = gtk_hbox_new(TRUE, 4);
+        gtk_box_pack_start(GTK_BOX(buy_row), button("Buy 1", G_CALLBACK(on_buy), GINT_TO_POINTER(1), 10, -1, 30), TRUE, TRUE, 1);
+        gtk_box_pack_start(GTK_BOX(buy_row), button("Buy 10", G_CALLBACK(on_buy), GINT_TO_POINTER(10), 10, -1, 30), TRUE, TRUE, 1);
+        gtk_box_pack_start(GTK_BOX(buy_row), button("Buy Max", G_CALLBACK(on_buy), GINT_TO_POINTER(9999), 9, -1, 30), TRUE, TRUE, 1);
+        gtk_box_pack_start(GTK_BOX(buy_row), button("Travel", G_CALLBACK(on_show_travel), nullptr, 12, -1, 30), TRUE, TRUE, 1);
+        gtk_box_pack_start(GTK_BOX(root), buy_row, FALSE, FALSE, 1);
 
-        GtkWidget* sell_row = gtk_hbox_new(TRUE, 10);
-        gtk_box_pack_start(GTK_BOX(sell_row), button("Sell 1", G_CALLBACK(on_sell), GINT_TO_POINTER(1), 16, -1, 44), TRUE, TRUE, 1);
-        gtk_box_pack_start(GTK_BOX(sell_row), button("Sell 10", G_CALLBACK(on_sell), GINT_TO_POINTER(10), 16, -1, 44), TRUE, TRUE, 1);
-        gtk_box_pack_start(GTK_BOX(sell_row), button("Sell Max", G_CALLBACK(on_sell), GINT_TO_POINTER(9999), 15, -1, 44), TRUE, TRUE, 1);
-        gtk_box_pack_start(GTK_BOX(sell_row), button("Bank", G_CALLBACK(on_show_bank), nullptr, 22, -1, 44), TRUE, TRUE, 1);
-        gtk_box_pack_start(GTK_BOX(root), sell_row, FALSE, FALSE, 2);
+        GtkWidget* sell_row = gtk_hbox_new(TRUE, 4);
+        gtk_box_pack_start(GTK_BOX(sell_row), button("Sell 1", G_CALLBACK(on_sell), GINT_TO_POINTER(1), 10, -1, 30), TRUE, TRUE, 1);
+        gtk_box_pack_start(GTK_BOX(sell_row), button("Sell 10", G_CALLBACK(on_sell), GINT_TO_POINTER(10), 10, -1, 30), TRUE, TRUE, 1);
+        gtk_box_pack_start(GTK_BOX(sell_row), button("Sell Max", G_CALLBACK(on_sell), GINT_TO_POINTER(9999), 9, -1, 30), TRUE, TRUE, 1);
+        gtk_box_pack_start(GTK_BOX(sell_row), button("Bank", G_CALLBACK(on_show_bank), nullptr, 12, -1, 30), TRUE, TRUE, 1);
+        gtk_box_pack_start(GTK_BOX(root), sell_row, FALSE, FALSE, 1);
         gtk_widget_show_all(window);
     }
 
@@ -926,8 +932,8 @@ public:
         gtk_window_set_keep_above(GTK_WINDOW(window), TRUE);
 
         g_signal_connect(window, "destroy", G_CALLBACK(on_exit), nullptr);
-        root = gtk_vbox_new(FALSE, 3);
-        gtk_container_set_border_width(GTK_CONTAINER(root), 6);
+        root = gtk_vbox_new(FALSE, 1);
+        gtk_container_set_border_width(GTK_CONTAINER(root), 3);
         gtk_container_add(GTK_CONTAINER(window), root);
         if (!load()) new_game();
         if (game_over) show_game_over();
