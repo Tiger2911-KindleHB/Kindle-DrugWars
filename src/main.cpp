@@ -721,11 +721,28 @@ public:
 
     void build_window(int* argc, char*** argv) {
         gtk_init(argc, argv);
-        window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+
+        // Kindle Home can remain above ordinary GTK toplevels on newer firmware.
+        // Use a popup/override-redirect window and force it to the full screen.
+        window = gtk_window_new(GTK_WINDOW_POPUP);
         g_object_set_data(G_OBJECT(window), "app", this);
-        // Kindle Awesome WM expects layer/name/chrome/id metadata in the window title.
         gtk_window_set_title(GTK_WINDOW(window), "L:A_N:application_PC:N_ID:kindledopewars");
+        gtk_window_set_decorated(GTK_WINDOW(window), FALSE);
+        gtk_window_set_resizable(GTK_WINDOW(window), FALSE);
+        gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_NONE);
+
+        int screen_w = gdk_screen_width();
+        int screen_h = gdk_screen_height();
+        if (screen_w < 300 || screen_h < 300) {
+            screen_w = 758;
+            screen_h = 1024;
+        }
+        gtk_window_move(GTK_WINDOW(window), 0, 0);
+        gtk_widget_set_size_request(window, screen_w, screen_h);
+        gtk_window_set_default_size(GTK_WINDOW(window), screen_w, screen_h);
         gtk_window_fullscreen(GTK_WINDOW(window));
+        gtk_window_set_keep_above(GTK_WINDOW(window), TRUE);
+
         g_signal_connect(window, "destroy", G_CALLBACK(on_exit), nullptr);
         root = gtk_vbox_new(FALSE, 3);
         gtk_container_set_border_width(GTK_CONTAINER(root), 6);
@@ -733,6 +750,7 @@ public:
         if (!load()) new_game();
         if (game_over) show_game_over();
         else show_market();
+        gtk_window_present(GTK_WINDOW(window));
     }
 
     static GameApp* app_from_widget(GtkWidget* w) {

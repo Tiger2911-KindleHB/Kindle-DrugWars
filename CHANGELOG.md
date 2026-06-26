@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.1.4 - KUAL Launch / Home Screen Takeover Fix
+
+- Changed KUAL `menu.json` to call the launch script by absolute path: `/mnt/us/extensions/kindledopewars/bin/launch.sh`.
+- Hardened the launch script with `DISPLAY=:0`, absolute extension paths, stale-process cleanup, and a real launch log at `/mnt/us/extensions/kindledopewars/data/kindledopewars.log`.
+- Changed the GTK window from an ordinary toplevel to a popup/override-redirect full-screen window so Kindle Home is less likely to sit on top of the app.
+- Forced the app window to position `0,0`, use the detected Kindle screen size, stay above other windows, and present itself after drawing.
+- Added static runtime link arguments for `libstdc++` and `libgcc` when supported by the kindlehf compiler to reduce missing-runtime-library failures on device.
+
+## 0.1.3 - KUAL Discovery Fix
+
+- Added the required `<menus>` block to `extension/kindledopewars/config.xml`.
+- Pointed KUAL explicitly at `menu.json` with `<menu type="json" dynamic="true">menu.json</menu>`.
+- Fixes the extension compiling successfully but not appearing in the KUAL extension list.
+
+## 0.1.2 - GitHub Actions Dependency Fix
+
+- Replaced Ubuntu package `libnettle-dev` with `nettle-dev` in the GitHub Actions host dependency install step.
+- Fixes first-build failure on Ubuntu 24.04 / `ubuntu-latest` where `libnettle-dev` has no installation candidate.
+
 ## 0.1.1 - Preflight Fixes
 
 - Hardened GitHub Actions workflow against lost executable bits when files are uploaded from Windows or through the GitHub web UI.
