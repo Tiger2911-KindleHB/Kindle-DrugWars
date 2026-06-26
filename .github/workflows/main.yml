@@ -28,7 +28,7 @@ jobs:
             libbz2-dev \
             libgmp-dev \
             liblzma-dev \
-            libnettle-dev \
+            nettle-dev \
             libssl-dev \
             meson \
             ninja-build \
