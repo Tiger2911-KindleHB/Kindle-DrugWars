@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<extension>
+  <information>
+    <name>Dope Wars Kindle</name>
+    <version>0.1.0</version>
+    <author>Nick Garske / ChatGPT</author>
+    <id>kindledopewars</id>
+  </information>
+</extension>

@@ -1,0 +1,10 @@
+{
+  "items": [
+    {
+      "name": "Dope Wars Kindle",
+      "priority": 0,
+      "action": "bin/launch.sh",
+      "params": ""
+    }
+  ]
+}
