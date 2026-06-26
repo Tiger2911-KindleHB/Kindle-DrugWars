@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.5 - User Layout Pass
+
+- Rebuilt the main market screen to match the supplied Kindle UI mockup: top stat bar, left cash/debt/debt-days block, centered current location block, tappable news area, item/price/held table, and bottom Buy/Sell/Travel/Bank controls.
+- Centered button label alignment across the market, popup, and action buttons.
+- Added dynamic font sizing for compact stat fields so longer money/stat values are less likely to overflow their assigned UI area.
+- Changed Travel from a full-page view into a modal popup with location choices.
+- Changed Bank / Loan Shark from a full-page view into a modal popup with deposit, withdraw, debt payment, and borrow actions.
+- Added a Settings popup for basic control guidance.
+- Made the news/random-event area tappable; spending $250 now reveals a scheduled future market tip.
+- Added scheduled future market events so purchased street information maps to an actual upcoming shortage or market flood.
+- Persisted scheduled future-event fields in the save file.
+
 ## 0.1.4 - KUAL Launch / Home Screen Takeover Fix
 
 - Changed KUAL `menu.json` to call the launch script by absolute path: `/mnt/us/extensions/kindledopewars/bin/launch.sh`.
