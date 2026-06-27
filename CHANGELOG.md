@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.7 - Debug Font Controls
+
+- Reduced the default drug chart text size again, with item rows now using the new `chart` debug size instead of fixed larger fonts.
+- Added Settings debug controls for the three primary UI font groups: `header`, `chart`, and `bottom`.
+- Added plus/minus controls in Settings with the requested layout: `[ - ] [header: x] [ + ]`, `[ - ] [chart: x] [ + ]`, and `[ - ] [bottom: x] [ + ]`.
+- Persisted debug font sizes in the save file so Kindle-specific tuning survives app restarts.
+- Routed top stat labels and New/Settings/Exit through the header size, the drug table through the chart size, and Buy/Sell/Travel/Bank through the bottom size.
+
 ## 0.1.6 - Kindle UI Scale Reduction
 
 - Reduced the main-screen font scale so the top stat bar, New/Settings/Exit buttons, table, and bottom action buttons fit inside the visible Kindle screen.
