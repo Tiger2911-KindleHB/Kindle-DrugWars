@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.13 - Layout Spacing Debug Controls
+
+- Added persistent spacing controls in Settings for `section gap`, `chart gap`, and `bottom gap` so the Kindle UI can be tuned beyond text size alone.
+- Reduced default vertical dead space between major regions by lowering root padding, separator padding, and fixed region heights.
+- Made drug-chart row height depend on both chart font size and the new `chart gap` setting instead of using a large fixed extra row height.
+- Reduced the default chart row height calculation so more of the item list and bottom controls fit on-screen.
+- Made bottom buy/sell/travel/bank button spacing and height use the new `bottom gap` setting.
+- Updated Settings helper text to explain the difference between text sizing and spacing controls.
+
 ## 0.1.12 - Remove Mockup Region Colors
 
 - Removed colored backgrounds from the main market UI.

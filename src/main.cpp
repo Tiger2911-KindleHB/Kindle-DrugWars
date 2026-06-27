@@ -124,6 +124,9 @@ public:
     int event_font = 14;
     int chart_font = 6;
     int bottom_font = 9;
+    int section_gap = 0;
+    int chart_gap = 0;
+    int bottom_gap = 2;
     std::vector<int> price;
     std::vector<int> held;
     std::mt19937 rng;
@@ -574,6 +577,9 @@ public:
         out << "event_font=" << event_font << "\n";
         out << "chart_font=" << chart_font << "\n";
         out << "bottom_font=" << bottom_font << "\n";
+        out << "section_gap=" << section_gap << "\n";
+        out << "chart_gap=" << chart_gap << "\n";
+        out << "bottom_gap=" << bottom_gap << "\n";
         out << "game_over=" << (game_over ? 1 : 0) << "\n";
         out << "reason=" << game_over_reason << "\n";
         for (int i = 0; i < ITEM_COUNT; ++i) out << "held" << i << "=" << held[i] << "\n";
@@ -610,6 +616,9 @@ public:
         event_font = clampi(parse_int(kv["event_font"], 14), 4, 26);
         chart_font = clampi(parse_int(kv["chart_font"], 6), 4, 18);
         bottom_font = clampi(parse_int(kv["bottom_font"], 9), 4, 22);
+        section_gap = clampi(parse_int(kv["section_gap"], 0), 0, 12);
+        chart_gap = clampi(parse_int(kv["chart_gap"], 0), -4, 18);
+        bottom_gap = clampi(parse_int(kv["bottom_gap"], 2), 0, 14);
         if (future_event_day <= day || future_event_type < 1 || future_event_type > 2) schedule_future_event();
         game_over = parse_int(kv["game_over"], 0) != 0;
         game_over_reason = kv["reason"];
@@ -723,6 +732,18 @@ public:
         return spacer;
     }
 
+    int pack_gap() const {
+        return clampi(section_gap, 0, 12);
+    }
+
+    int chart_row_height() const {
+        return clampi(chart_font + 6 + chart_gap, 12, 42);
+    }
+
+    int bottom_button_height() const {
+        return clampi(bottom_font + 22 + bottom_gap, 30, 58);
+    }
+
     std::string stats_line() const {
         std::ostringstream ss;
         ss << "Day " << day << " | " << LOCATIONS[location]
@@ -755,6 +776,9 @@ public:
         else if (target == 3) event_font = clampi(event_font + delta, 4, 26);
         else if (target == 4) chart_font = clampi(chart_font + delta, 4, 18);
         else if (target == 5) bottom_font = clampi(bottom_font + delta, 4, 22);
+        else if (target == 6) section_gap = clampi(section_gap + delta, 0, 12);
+        else if (target == 7) chart_gap = clampi(chart_gap + delta, -4, 18);
+        else if (target == 8) bottom_gap = clampi(bottom_gap + delta, 0, 14);
         save();
     }
 
@@ -888,10 +912,11 @@ public:
         offer_type = 0;
         clear_root();
 
+        int gap = pack_gap();
         int top_font = clampi(header_font + 2, 10, 16);
-        int top_h = std::max(38, top_font + 26);
-        GtkWidget* top_row = gtk_hbox_new(FALSE, 3);
-        gtk_container_set_border_width(GTK_CONTAINER(top_row), 2);
+        int top_h = std::max(36, top_font + 24);
+        GtkWidget* top_row = gtk_hbox_new(FALSE, std::max(1, gap));
+        gtk_container_set_border_width(GTK_CONTAINER(top_row), std::max(1, gap));
         gtk_box_pack_start(GTK_BOX(top_row), stat_label("Day: " + std::to_string(day)), TRUE, TRUE, 0);
         gtk_box_pack_start(GTK_BOX(top_row), stat_label("Health: " + std::to_string(health)), TRUE, TRUE, 0);
         gtk_box_pack_start(GTK_BOX(top_row), stat_label("Coat: " + std::to_string(used_space()) + "/" + std::to_string(capacity)), TRUE, TRUE, 0);
@@ -899,38 +924,38 @@ public:
         gtk_box_pack_start(GTK_BOX(top_row), button("New", G_CALLBACK(on_confirm_new), nullptr, top_font, 60, top_h), FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(top_row), button("Settings", G_CALLBACK(on_show_settings), nullptr, std::max(9, top_font - 1), 108, top_h), FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(top_row), button("Exit", G_CALLBACK(on_exit), nullptr, top_font, 60, top_h), FALSE, FALSE, 0);
-        gtk_box_pack_start(GTK_BOX(root), region_wrap(top_row, top_h + 4), FALSE, FALSE, 0);
-        gtk_box_pack_start(GTK_BOX(root), hline(), FALSE, FALSE, 1);
+        gtk_box_pack_start(GTK_BOX(root), region_wrap(top_row, top_h + std::max(1, gap)), FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(root), hline(), FALSE, FALSE, gap);
 
-        GtkWidget* summary = gtk_hbox_new(FALSE, 7);
-        gtk_container_set_border_width(GTK_CONTAINER(summary), 7);
+        GtkWidget* summary = gtk_hbox_new(FALSE, 3 + gap);
+        gtk_container_set_border_width(GTK_CONTAINER(summary), 2 + gap);
         GtkWidget* money_box = gtk_vbox_new(FALSE, 1);
         gtk_box_pack_start(GTK_BOX(money_box), label("Cash: " + money(cash), compact_font_for("Cash: " + money(cash), info_font), false), FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(money_box), label("Debt: " + money(debt), compact_font_for("Debt: " + money(debt), info_font), false), FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(money_box), label("Debt Days: " + std::to_string(negative_days) + "/" + std::to_string(NEGATIVE_LIMIT), info_font, false), FALSE, FALSE, 0);
-        gtk_box_pack_start(GTK_BOX(summary), money_box, FALSE, FALSE, 7);
-        gtk_box_pack_start(GTK_BOX(summary), gtk_vseparator_new(), FALSE, FALSE, 8);
+        gtk_box_pack_start(GTK_BOX(summary), money_box, FALSE, FALSE, 2 + gap);
+        gtk_box_pack_start(GTK_BOX(summary), gtk_vseparator_new(), FALSE, FALSE, 3 + gap);
         GtkWidget* loc = centered_label(LOCATIONS[location], compact_font_for(LOCATIONS[location], clampi(info_font + 8, 12, 24)), false);
-        gtk_box_pack_start(GTK_BOX(summary), loc, TRUE, TRUE, 4);
-        gtk_box_pack_start(GTK_BOX(root), region_wrap(summary, std::max(68, info_font * 4 + 18)), FALSE, FALSE, 0);
-        gtk_box_pack_start(GTK_BOX(root), hline(), FALSE, FALSE, 1);
+        gtk_box_pack_start(GTK_BOX(summary), loc, TRUE, TRUE, 1 + gap);
+        gtk_box_pack_start(GTK_BOX(root), region_wrap(summary, clampi(info_font * 3 + 18 + gap * 3, 46, 96)), FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(root), hline(), FALSE, FALSE, gap);
 
         GtkWidget* news_box = gtk_event_box_new();
         gtk_event_box_set_visible_window(GTK_EVENT_BOX(news_box), TRUE);
-        gtk_widget_set_size_request(news_box, -1, std::max(72, event_font * 3 + 18));
+        gtk_widget_set_size_request(news_box, -1, clampi(event_font * 2 + 20 + gap * 4, 44, 96));
         GtkWidget* news_label = label(event_text(), event_font, true, 0.5f, GTK_JUSTIFY_CENTER);
         gtk_container_add(GTK_CONTAINER(news_box), news_label);
         g_object_set_data(G_OBJECT(news_box), "app", this);
         g_signal_connect(news_box, "button-press-event", G_CALLBACK(on_news_tap), nullptr);
         gtk_box_pack_start(GTK_BOX(root), news_box, FALSE, FALSE, 0);
-        gtk_box_pack_start(GTK_BOX(root), hline(), FALSE, FALSE, 1);
+        gtk_box_pack_start(GTK_BOX(root), hline(), FALSE, FALSE, gap);
 
         GtkWidget* scroller = gtk_scrolled_window_new(nullptr, nullptr);
         gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroller), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
         GtkWidget* table = gtk_table_new(ITEM_COUNT + 1, 3, FALSE);
-        gtk_table_set_row_spacings(GTK_TABLE(table), 1);
-        gtk_table_set_col_spacings(GTK_TABLE(table), 3);
-        int chart_row_h = std::max(18, chart_font + 12);
+        gtk_table_set_row_spacings(GTK_TABLE(table), std::max(0, chart_gap));
+        gtk_table_set_col_spacings(GTK_TABLE(table), 1 + gap);
+        int chart_row_h = chart_row_height();
         gtk_table_attach_defaults(GTK_TABLE(table), centered_label("Item", chart_font, false), 0, 1, 0, 1);
         gtk_table_attach_defaults(GTK_TABLE(table), centered_label("Price", chart_font, false), 1, 2, 0, 1);
         gtk_table_attach_defaults(GTK_TABLE(table), centered_label("Held", chart_font, false), 2, 3, 0, 1);
@@ -943,26 +968,26 @@ public:
             gtk_table_attach_defaults(GTK_TABLE(table), centered_label(std::to_string(held[i]), chart_font, false), 2, 3, i + 1, i + 2);
         }
         gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(scroller), table);
-        gtk_box_pack_start(GTK_BOX(root), region_wrap(scroller, 220), TRUE, TRUE, 0);
-        gtk_box_pack_start(GTK_BOX(root), hline(), FALSE, FALSE, 1);
+        gtk_box_pack_start(GTK_BOX(root), region_wrap(scroller, clampi(chart_row_h * (ITEM_COUNT + 1) + 6, 150, 300)), TRUE, TRUE, 0);
+        gtk_box_pack_start(GTK_BOX(root), hline(), FALSE, FALSE, gap);
 
-        int bottom_h = std::max(38, bottom_font + 26);
-        GtkWidget* bottom_box = gtk_vbox_new(FALSE, 4);
-        gtk_container_set_border_width(GTK_CONTAINER(bottom_box), 7);
-        GtkWidget* buy_row = gtk_hbox_new(TRUE, 8);
-        gtk_box_pack_start(GTK_BOX(buy_row), button("Buy 1", G_CALLBACK(on_buy), GINT_TO_POINTER(1), bottom_font, -1, bottom_h), TRUE, TRUE, 2);
-        gtk_box_pack_start(GTK_BOX(buy_row), button("Buy 10", G_CALLBACK(on_buy), GINT_TO_POINTER(10), bottom_font, -1, bottom_h), TRUE, TRUE, 2);
-        gtk_box_pack_start(GTK_BOX(buy_row), button("Buy Max", G_CALLBACK(on_buy), GINT_TO_POINTER(9999), std::max(5, bottom_font - 1), -1, bottom_h), TRUE, TRUE, 2);
-        gtk_box_pack_start(GTK_BOX(buy_row), button("Travel", G_CALLBACK(on_show_travel), nullptr, clampi(bottom_font + 4, 8, 24), -1, bottom_h), TRUE, TRUE, 2);
+        int bottom_h = bottom_button_height();
+        GtkWidget* bottom_box = gtk_vbox_new(FALSE, bottom_gap);
+        gtk_container_set_border_width(GTK_CONTAINER(bottom_box), 2 + bottom_gap);
+        GtkWidget* buy_row = gtk_hbox_new(TRUE, 3 + bottom_gap);
+        gtk_box_pack_start(GTK_BOX(buy_row), button("Buy 1", G_CALLBACK(on_buy), GINT_TO_POINTER(1), bottom_font, -1, bottom_h), TRUE, TRUE, bottom_gap);
+        gtk_box_pack_start(GTK_BOX(buy_row), button("Buy 10", G_CALLBACK(on_buy), GINT_TO_POINTER(10), bottom_font, -1, bottom_h), TRUE, TRUE, bottom_gap);
+        gtk_box_pack_start(GTK_BOX(buy_row), button("Buy Max", G_CALLBACK(on_buy), GINT_TO_POINTER(9999), std::max(5, bottom_font - 1), -1, bottom_h), TRUE, TRUE, bottom_gap);
+        gtk_box_pack_start(GTK_BOX(buy_row), button("Travel", G_CALLBACK(on_show_travel), nullptr, clampi(bottom_font + 4, 8, 24), -1, bottom_h), TRUE, TRUE, bottom_gap);
         gtk_box_pack_start(GTK_BOX(bottom_box), buy_row, FALSE, FALSE, 0);
 
-        GtkWidget* sell_row = gtk_hbox_new(TRUE, 8);
-        gtk_box_pack_start(GTK_BOX(sell_row), button("Sell 1", G_CALLBACK(on_sell), GINT_TO_POINTER(1), bottom_font, -1, bottom_h), TRUE, TRUE, 2);
-        gtk_box_pack_start(GTK_BOX(sell_row), button("Sell 10", G_CALLBACK(on_sell), GINT_TO_POINTER(10), bottom_font, -1, bottom_h), TRUE, TRUE, 2);
-        gtk_box_pack_start(GTK_BOX(sell_row), button("Sell Max", G_CALLBACK(on_sell), GINT_TO_POINTER(9999), std::max(5, bottom_font - 1), -1, bottom_h), TRUE, TRUE, 2);
-        gtk_box_pack_start(GTK_BOX(sell_row), button("Bank", G_CALLBACK(on_show_bank), nullptr, clampi(bottom_font + 4, 8, 24), -1, bottom_h), TRUE, TRUE, 2);
+        GtkWidget* sell_row = gtk_hbox_new(TRUE, 3 + bottom_gap);
+        gtk_box_pack_start(GTK_BOX(sell_row), button("Sell 1", G_CALLBACK(on_sell), GINT_TO_POINTER(1), bottom_font, -1, bottom_h), TRUE, TRUE, bottom_gap);
+        gtk_box_pack_start(GTK_BOX(sell_row), button("Sell 10", G_CALLBACK(on_sell), GINT_TO_POINTER(10), bottom_font, -1, bottom_h), TRUE, TRUE, bottom_gap);
+        gtk_box_pack_start(GTK_BOX(sell_row), button("Sell Max", G_CALLBACK(on_sell), GINT_TO_POINTER(9999), std::max(5, bottom_font - 1), -1, bottom_h), TRUE, TRUE, bottom_gap);
+        gtk_box_pack_start(GTK_BOX(sell_row), button("Bank", G_CALLBACK(on_show_bank), nullptr, clampi(bottom_font + 4, 8, 24), -1, bottom_h), TRUE, TRUE, bottom_gap);
         gtk_box_pack_start(GTK_BOX(bottom_box), sell_row, FALSE, FALSE, 0);
-        gtk_box_pack_start(GTK_BOX(root), region_wrap(bottom_box, bottom_h * 2 + 24), FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(root), region_wrap(bottom_box, bottom_h * 2 + bottom_gap * 5 + 6), FALSE, FALSE, 0);
         gtk_widget_show_all(window);
     }
 
@@ -1080,11 +1105,14 @@ public:
         add_font_row("header", header_font, 1);
         add_font_row("stats", info_font, 2);
         add_font_row("event", event_font, 3);
-        add_font_row("chart", chart_font, 4);
-        add_font_row("bottom", bottom_font, 5);
+        add_font_row("chart text", chart_font, 4);
+        add_font_row("bottom text", bottom_font, 5);
+        add_font_row("section gap", section_gap, 6);
+        add_font_row("chart gap", chart_gap, 7);
+        add_font_row("bottom gap", bottom_gap, 8);
 
         gtk_box_pack_start(GTK_BOX(root), hline(), FALSE, FALSE, 4);
-        gtk_box_pack_start(GTK_BOX(root), label("Debug sizes map to layout regions: header, stats/location, event/news, chart, and bottom controls. Colors from mockups are layout markers only; the app remains plain black and white.", 10, true, 0.5f, GTK_JUSTIFY_CENTER), FALSE, FALSE, 3);
+        gtk_box_pack_start(GTK_BOX(root), label("Debug controls now include text size and spacing. Use section gap for space between major regions, chart gap for drug-row spacing, and bottom gap for buy/sell button spacing.", 10, true, 0.5f, GTK_JUSTIFY_CENTER), FALSE, FALSE, 3);
 
         GtkWidget* main_row = gtk_hbox_new(TRUE, 8);
         gtk_box_pack_start(GTK_BOX(main_row), button("Back", G_CALLBACK(on_show_market), nullptr, 20, -1, 56), TRUE, TRUE, 2);
@@ -1169,8 +1197,8 @@ public:
         gtk_window_set_keep_above(GTK_WINDOW(window), TRUE);
 
         g_signal_connect(window, "destroy", G_CALLBACK(on_exit), nullptr);
-        root = gtk_vbox_new(FALSE, 1);
-        gtk_container_set_border_width(GTK_CONTAINER(root), 3);
+        root = gtk_vbox_new(FALSE, 0);
+        gtk_container_set_border_width(GTK_CONTAINER(root), 1);
         gtk_container_add(GTK_CONTAINER(window), root);
         if (!load()) new_game();
         if (game_over) show_game_over();
