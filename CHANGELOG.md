@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.8 - Top Menu Visibility Fix
+
+- Moved New/Settings/Exit out of the overloaded stat row and onto a dedicated top control strip so they remain visible and tappable on the Kindle screen.
+- Added a larger top safe margin to keep the app controls away from the Kindle status overlay area.
+- Reduced the fixed menu-button font/height so the three top controls fit even when header debug text is larger.
+- Lowered news and bottom-control vertical sizes slightly to recover screen space after the dedicated top control strip was added.
+- Expanded debug font minimums down to 4 so oversized saved settings can be stepped down farther from Settings.
+
 ## 0.1.7 - Debug Font Controls
 
 - Reduced the default drug chart text size again, with item rows now using the new `chart` debug size instead of fixed larger fonts.

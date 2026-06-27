@@ -119,9 +119,9 @@ public:
     bool game_over = false;
     std::string game_over_reason;
     std::string log = "Welcome to New York. Buy low, sell high, pay the loan shark.";
-    int header_font = 7;
-    int chart_font = 6;
-    int bottom_font = 7;
+    int header_font = 6;
+    int chart_font = 5;
+    int bottom_font = 6;
     std::vector<int> price;
     std::vector<int> held;
     std::mt19937 rng;
@@ -596,9 +596,9 @@ public:
         future_event_type = parse_int(kv["future_event_type"], 0);
         future_event_location = clampi(parse_int(kv["future_event_location"], 0), 0, LOCATION_COUNT - 1);
         future_event_known = parse_int(kv["future_event_known"], 0) != 0;
-        header_font = clampi(parse_int(kv["header_font"], 7), 5, 14);
-        chart_font = clampi(parse_int(kv["chart_font"], 6), 5, 14);
-        bottom_font = clampi(parse_int(kv["bottom_font"], 7), 5, 16);
+        header_font = clampi(parse_int(kv["header_font"], 6), 4, 14);
+        chart_font = clampi(parse_int(kv["chart_font"], 5), 4, 14);
+        bottom_font = clampi(parse_int(kv["bottom_font"], 6), 4, 16);
         if (future_event_day <= day || future_event_type < 1 || future_event_type > 2) schedule_future_event();
         game_over = parse_int(kv["game_over"], 0) != 0;
         game_over_reason = kv["reason"];
@@ -709,9 +709,9 @@ public:
     void adjust_font_setting(int code) {
         int delta = code < 0 ? -1 : 1;
         int target = std::abs(code);
-        if (target == 1) header_font = clampi(header_font + delta, 5, 14);
-        else if (target == 2) chart_font = clampi(chart_font + delta, 5, 14);
-        else if (target == 3) bottom_font = clampi(bottom_font + delta, 5, 16);
+        if (target == 1) header_font = clampi(header_font + delta, 4, 14);
+        else if (target == 2) chart_font = clampi(chart_font + delta, 4, 14);
+        else if (target == 3) bottom_font = clampi(bottom_font + delta, 4, 16);
         save();
     }
 
@@ -724,24 +724,35 @@ public:
         offer_type = 0;
         clear_root();
 
-        GtkWidget* top = gtk_hbox_new(FALSE, 2);
-        int header_button_h = std::max(18, header_font + 11);
-        gtk_box_pack_start(GTK_BOX(top), stat_label("Day: " + std::to_string(day)), TRUE, TRUE, 0);
-        gtk_box_pack_start(GTK_BOX(top), stat_label("Health: " + std::to_string(health)), TRUE, TRUE, 0);
-        gtk_box_pack_start(GTK_BOX(top), stat_label("Coat: " + std::to_string(used_space()) + "/" + std::to_string(capacity)), TRUE, TRUE, 0);
-        gtk_box_pack_start(GTK_BOX(top), stat_label("Bank: " + money(bank)), TRUE, TRUE, 0);
-        gtk_box_pack_start(GTK_BOX(top), button("New", G_CALLBACK(on_confirm_new), nullptr, std::max(5, header_font - 1), 42, header_button_h), FALSE, FALSE, 0);
-        gtk_box_pack_start(GTK_BOX(top), button("Settings", G_CALLBACK(on_show_settings), nullptr, std::max(5, header_font - 1), 58, header_button_h), FALSE, FALSE, 0);
-        gtk_box_pack_start(GTK_BOX(top), button("Exit", G_CALLBACK(on_exit), nullptr, std::max(5, header_font - 1), 38, header_button_h), FALSE, FALSE, 0);
-        gtk_box_pack_start(GTK_BOX(root), vertical_spacer(2), FALSE, FALSE, 0);
+        // Keep Kindle Home/status overlays from covering the controls.
+        // Put the menu buttons on their own visible strip instead of letting stat labels push them off-screen.
+        gtk_box_pack_start(GTK_BOX(root), vertical_spacer(10), FALSE, FALSE, 0);
+
+        GtkWidget* top = gtk_vbox_new(FALSE, 0);
+        GtkWidget* stat_row = gtk_hbox_new(TRUE, 1);
+        gtk_box_pack_start(GTK_BOX(stat_row), stat_label("Day: " + std::to_string(day)), TRUE, TRUE, 0);
+        gtk_box_pack_start(GTK_BOX(stat_row), stat_label("Health: " + std::to_string(health)), TRUE, TRUE, 0);
+        gtk_box_pack_start(GTK_BOX(stat_row), stat_label("Coat: " + std::to_string(used_space()) + "/" + std::to_string(capacity)), TRUE, TRUE, 0);
+        gtk_box_pack_start(GTK_BOX(stat_row), stat_label("Bank: " + money(bank)), TRUE, TRUE, 0);
+        gtk_box_pack_start(GTK_BOX(top), stat_row, FALSE, FALSE, 0);
+
+        GtkWidget* controls = gtk_hbox_new(FALSE, 2);
+        gtk_box_pack_start(GTK_BOX(controls), label("", 4, false), TRUE, TRUE, 0);
+        int menu_font = std::max(4, std::min(header_font, 6));
+        int header_button_h = 18;
+        gtk_box_pack_start(GTK_BOX(controls), button("New", G_CALLBACK(on_confirm_new), nullptr, menu_font, 38, header_button_h), FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(controls), button("Settings", G_CALLBACK(on_show_settings), nullptr, menu_font, 58, header_button_h), FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(controls), button("Exit", G_CALLBACK(on_exit), nullptr, menu_font, 36, header_button_h), FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(top), controls, FALSE, FALSE, 0);
+
         gtk_box_pack_start(GTK_BOX(root), top, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(root), hline(), FALSE, FALSE, 0);
 
         GtkWidget* summary = gtk_hbox_new(FALSE, 6);
         GtkWidget* money_box = gtk_vbox_new(FALSE, 0);
-        gtk_box_pack_start(GTK_BOX(money_box), label("Cash: " + money(cash), compact_font_for("Cash: " + money(cash), header_font + 2), false), FALSE, FALSE, 0);
-        gtk_box_pack_start(GTK_BOX(money_box), label("Debt: " + money(debt), compact_font_for("Debt: " + money(debt), header_font + 2), false), FALSE, FALSE, 0);
-        gtk_box_pack_start(GTK_BOX(money_box), label("Debt Days: " + std::to_string(negative_days) + "/" + std::to_string(NEGATIVE_LIMIT), header_font + 2, false), FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(money_box), label("Cash: " + money(cash), compact_font_for("Cash: " + money(cash), header_font + 1), false), FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(money_box), label("Debt: " + money(debt), compact_font_for("Debt: " + money(debt), header_font + 1), false), FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(money_box), label("Debt Days: " + std::to_string(negative_days) + "/" + std::to_string(NEGATIVE_LIMIT), header_font + 1, false), FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(summary), money_box, FALSE, FALSE, 4);
         gtk_box_pack_start(GTK_BOX(summary), gtk_vseparator_new(), FALSE, FALSE, 8);
         GtkWidget* loc = centered_label(LOCATIONS[location], compact_font_for(LOCATIONS[location], clampi(header_font + 8, 10, 16)), false);
@@ -750,8 +761,8 @@ public:
         gtk_box_pack_start(GTK_BOX(root), hline(), FALSE, FALSE, 0);
 
         GtkWidget* news_box = gtk_event_box_new();
-        gtk_widget_set_size_request(news_box, -1, 46);
-        GtkWidget* news_label = label(event_text(), clampi(chart_font + 2, 7, 11), true, 0.5f, GTK_JUSTIFY_FILL);
+        gtk_widget_set_size_request(news_box, -1, 38);
+        GtkWidget* news_label = label(event_text(), clampi(chart_font + 1, 5, 9), true, 0.5f, GTK_JUSTIFY_FILL);
         gtk_container_add(GTK_CONTAINER(news_box), news_label);
         g_object_set_data(G_OBJECT(news_box), "app", this);
         g_signal_connect(news_box, "button-press-event", G_CALLBACK(on_news_tap), nullptr);
@@ -776,7 +787,7 @@ public:
         gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(scroller), table);
         gtk_box_pack_start(GTK_BOX(root), scroller, TRUE, TRUE, 0);
 
-        int bottom_h = std::max(22, bottom_font + 15);
+        int bottom_h = std::max(18, bottom_font + 12);
         GtkWidget* buy_row = gtk_hbox_new(TRUE, 3);
         gtk_box_pack_start(GTK_BOX(buy_row), button("Buy 1", G_CALLBACK(on_buy), GINT_TO_POINTER(1), bottom_font, -1, bottom_h), TRUE, TRUE, 1);
         gtk_box_pack_start(GTK_BOX(buy_row), button("Buy 10", G_CALLBACK(on_buy), GINT_TO_POINTER(10), bottom_font, -1, bottom_h), TRUE, TRUE, 1);
