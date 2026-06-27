@@ -1,4 +1,21 @@
 # Changelog
+## 0.1.10 - Large Main Menu / Touch Deferral Fix
+
+- Removed the tiny New/Settings/Exit strip from the main market screen.
+- Added one large full-width `MENU / SETTINGS` button with a much larger font and tap target.
+- Moved New Run and Exit access into the Settings screen so they remain reachable without tiny top-corner buttons.
+- Converted Settings from a modal popup into a full-screen in-app page with large plus/minus controls and large Back/New Run/Exit buttons.
+- Changed deferred touch actions from GTK idle callbacks to a short timeout callback so screen rebuilds happen after the touch event has fully finished processing.
+
+## 0.1.9 - Touch Stability and Large Top Controls
+
+- Replaced the tiny top-right New/Settings/Exit controls with a full-width top control strip using large tap targets.
+- Added a larger top safe margin so the Kindle status overlay does not cover the control strip.
+- Changed the main app window back from popup/override-redirect mode to a normal fullscreen GTK toplevel for more reliable touch handling.
+- Deferred screen-changing button actions through the GTK idle loop so the app no longer destroys/rebuilds the active button while Kindle touch events are still being processed.
+- Increased the bottom action-button hit target height so Buy/Sell/Travel/Bank are easier to tap.
+- Trimmed the news area height slightly to recover vertical space for the larger controls.
+
 
 ## 0.1.8 - Top Menu Visibility Fix
 

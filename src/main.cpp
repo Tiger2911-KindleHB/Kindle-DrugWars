@@ -715,6 +715,123 @@ public:
         save();
     }
 
+    enum DeferredKind {
+        ACT_SELECT_ITEM = 1,
+        ACT_BUY,
+        ACT_SELL,
+        ACT_SHOW_TRAVEL,
+        ACT_SHOW_BANK,
+        ACT_SHOW_SETTINGS,
+        ACT_ADJUST_FONT,
+        ACT_SHOW_MARKET,
+        ACT_BUY_NEWS,
+        ACT_TRAVEL,
+        ACT_DEPOSIT,
+        ACT_WITHDRAW,
+        ACT_PAY_DEBT,
+        ACT_BORROW,
+        ACT_FIGHT,
+        ACT_RUN,
+        ACT_ACCEPT_OFFER,
+        ACT_REJECT_OFFER,
+        ACT_CONFIRM_NEW,
+        ACT_NEW_GAME
+    };
+
+    struct DeferredAction {
+        GameApp* app;
+        int kind;
+        int value;
+    };
+
+    void queue_action(int kind, int value = 0) {
+        DeferredAction* action = new DeferredAction{this, kind, value};
+        g_timeout_add(90, GameApp::run_deferred_action, action);
+    }
+
+    static gboolean run_deferred_action(gpointer data) {
+        DeferredAction* action = static_cast<DeferredAction*>(data);
+        GameApp* app = action ? action->app : nullptr;
+        int kind = action ? action->kind : 0;
+        int value = action ? action->value : 0;
+        delete action;
+        if (!app) return FALSE;
+
+        switch (kind) {
+            case ACT_SELECT_ITEM:
+                app->selected = clampi(value, 0, ITEM_COUNT - 1);
+                app->save();
+                app->show_market();
+                break;
+            case ACT_BUY:
+                app->buy_selected(value);
+                break;
+            case ACT_SELL:
+                app->sell_selected(value);
+                break;
+            case ACT_SHOW_TRAVEL:
+                app->show_travel();
+                break;
+            case ACT_SHOW_BANK:
+                app->show_bank();
+                break;
+            case ACT_SHOW_SETTINGS:
+                app->show_settings();
+                break;
+            case ACT_ADJUST_FONT:
+                app->adjust_font_setting(value);
+                app->show_settings();
+                break;
+            case ACT_SHOW_MARKET:
+                app->show_market();
+                break;
+            case ACT_BUY_NEWS:
+                app->buy_street_tip();
+                break;
+            case ACT_TRAVEL:
+                app->travel_to(value);
+                break;
+            case ACT_DEPOSIT:
+                app->deposit(value >= 999999 ? std::max<long long>(0, app->cash) : value);
+                app->show_market();
+                break;
+            case ACT_WITHDRAW:
+                app->withdraw(value >= 999999 ? std::max<long long>(0, app->bank) : value);
+                app->show_market();
+                break;
+            case ACT_PAY_DEBT:
+                app->pay_debt(value >= 999999 ? std::max<long long>(0, std::min(app->cash, app->debt)) : value);
+                app->show_market();
+                break;
+            case ACT_BORROW:
+                app->borrow(value);
+                app->show_market();
+                break;
+            case ACT_FIGHT:
+                app->fight_cops();
+                break;
+            case ACT_RUN:
+                app->run_from_cops();
+                break;
+            case ACT_ACCEPT_OFFER:
+                app->accept_offer();
+                break;
+            case ACT_REJECT_OFFER:
+                app->reject_offer();
+                break;
+            case ACT_CONFIRM_NEW:
+                app->show_new_confirm();
+                break;
+            case ACT_NEW_GAME:
+                app->new_game();
+                app->show_market();
+                break;
+            default:
+                break;
+        }
+        return FALSE;
+    }
+
     void show_market() {
         if (game_over) {
             show_game_over();
@@ -724,11 +841,12 @@ public:
         offer_type = 0;
         clear_root();
 
-        // Keep Kindle Home/status overlays from covering the controls.
-        // Put the menu buttons on their own visible strip instead of letting stat labels push them off-screen.
-        gtk_box_pack_start(GTK_BOX(root), vertical_spacer(10), FALSE, FALSE, 0);
+        // Keep the Kindle status overlay away from game controls.
+        // The old New/Settings/Exit strip was too small to tap reliably, so the
+        // main screen now exposes one large full-width menu button instead.
+        gtk_box_pack_start(GTK_BOX(root), vertical_spacer(12), FALSE, FALSE, 0);
 
-        GtkWidget* top = gtk_vbox_new(FALSE, 0);
+        GtkWidget* top = gtk_vbox_new(FALSE, 1);
         GtkWidget* stat_row = gtk_hbox_new(TRUE, 1);
         gtk_box_pack_start(GTK_BOX(stat_row), stat_label("Day: " + std::to_string(day)), TRUE, TRUE, 0);
         gtk_box_pack_start(GTK_BOX(stat_row), stat_label("Health: " + std::to_string(health)), TRUE, TRUE, 0);
@@ -736,14 +854,8 @@ public:
         gtk_box_pack_start(GTK_BOX(stat_row), stat_label("Bank: " + money(bank)), TRUE, TRUE, 0);
         gtk_box_pack_start(GTK_BOX(top), stat_row, FALSE, FALSE, 0);
 
-        GtkWidget* controls = gtk_hbox_new(FALSE, 2);
-        gtk_box_pack_start(GTK_BOX(controls), label("", 4, false), TRUE, TRUE, 0);
-        int menu_font = std::max(4, std::min(header_font, 6));
-        int header_button_h = 18;
-        gtk_box_pack_start(GTK_BOX(controls), button("New", G_CALLBACK(on_confirm_new), nullptr, menu_font, 38, header_button_h), FALSE, FALSE, 0);
-        gtk_box_pack_start(GTK_BOX(controls), button("Settings", G_CALLBACK(on_show_settings), nullptr, menu_font, 58, header_button_h), FALSE, FALSE, 0);
-        gtk_box_pack_start(GTK_BOX(controls), button("Exit", G_CALLBACK(on_exit), nullptr, menu_font, 36, header_button_h), FALSE, FALSE, 0);
-        gtk_box_pack_start(GTK_BOX(top), controls, FALSE, FALSE, 0);
+        GtkWidget* menu_button = button("MENU / SETTINGS", G_CALLBACK(on_show_settings), nullptr, 18, -1, 58);
+        gtk_box_pack_start(GTK_BOX(top), menu_button, FALSE, FALSE, 2);
 
         gtk_box_pack_start(GTK_BOX(root), top, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(root), hline(), FALSE, FALSE, 0);
@@ -761,7 +873,7 @@ public:
         gtk_box_pack_start(GTK_BOX(root), hline(), FALSE, FALSE, 0);
 
         GtkWidget* news_box = gtk_event_box_new();
-        gtk_widget_set_size_request(news_box, -1, 38);
+        gtk_widget_set_size_request(news_box, -1, 30);
         GtkWidget* news_label = label(event_text(), clampi(chart_font + 1, 5, 9), true, 0.5f, GTK_JUSTIFY_FILL);
         gtk_container_add(GTK_CONTAINER(news_box), news_label);
         g_object_set_data(G_OBJECT(news_box), "app", this);
@@ -787,7 +899,7 @@ public:
         gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(scroller), table);
         gtk_box_pack_start(GTK_BOX(root), scroller, TRUE, TRUE, 0);
 
-        int bottom_h = std::max(18, bottom_font + 12);
+        int bottom_h = std::max(26, bottom_font + 16);
         GtkWidget* buy_row = gtk_hbox_new(TRUE, 3);
         gtk_box_pack_start(GTK_BOX(buy_row), button("Buy 1", G_CALLBACK(on_buy), GINT_TO_POINTER(1), bottom_font, -1, bottom_h), TRUE, TRUE, 1);
         gtk_box_pack_start(GTK_BOX(buy_row), button("Buy 10", G_CALLBACK(on_buy), GINT_TO_POINTER(10), bottom_font, -1, bottom_h), TRUE, TRUE, 1);
@@ -874,39 +986,37 @@ public:
     }
 
     void show_settings() {
-        GtkWidget* dialog = gtk_dialog_new();
-        gtk_window_set_title(GTK_WINDOW(dialog), "Settings");
-        gtk_window_set_transient_for(GTK_WINDOW(dialog), GTK_WINDOW(window));
-        gtk_window_set_modal(GTK_WINDOW(dialog), TRUE);
-        gtk_window_set_decorated(GTK_WINDOW(dialog), FALSE);
-        gtk_container_set_border_width(GTK_CONTAINER(dialog), 8);
-        GtkWidget* area = GTK_DIALOG(dialog)->vbox;
-        gtk_box_pack_start(GTK_BOX(area), centered_label("Settings", 16, false), FALSE, FALSE, 3);
-        gtk_box_pack_start(GTK_BOX(area), label("Debug text sizes", 10, false, 0.5f, GTK_JUSTIFY_CENTER), FALSE, FALSE, 3);
+        clear_root();
+        gtk_box_pack_start(GTK_BOX(root), vertical_spacer(12), FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(root), centered_label("Settings", 22, false), FALSE, FALSE, 4);
+        gtk_box_pack_start(GTK_BOX(root), centered_label("Debug text sizes", 13, false), FALSE, FALSE, 2);
 
         auto add_font_row = [&](const std::string& name, int value, int code) {
-            GtkWidget* row = gtk_hbox_new(FALSE, 5);
-            GtkWidget* minus = button("-", G_CALLBACK(on_adjust_font), GINT_TO_POINTER(-code), 12, 52, 34);
-            GtkWidget* mid = centered_label(name + ": " + std::to_string(value), 11, false);
-            GtkWidget* plus = button("+", G_CALLBACK(on_adjust_font), GINT_TO_POINTER(code), 12, 52, 34);
-            gtk_widget_set_size_request(mid, 170, 34);
-            g_object_set_data(G_OBJECT(minus), "dialog", dialog);
-            g_object_set_data(G_OBJECT(plus), "dialog", dialog);
+            GtkWidget* row = gtk_hbox_new(FALSE, 8);
+            GtkWidget* minus = button("-", G_CALLBACK(on_adjust_font), GINT_TO_POINTER(-code), 22, 80, 56);
+            GtkWidget* mid = centered_label(name + ": " + std::to_string(value), 16, false);
+            GtkWidget* plus = button("+", G_CALLBACK(on_adjust_font), GINT_TO_POINTER(code), 22, 80, 56);
+            gtk_widget_set_size_request(mid, 210, 56);
             gtk_box_pack_start(GTK_BOX(row), minus, FALSE, FALSE, 0);
             gtk_box_pack_start(GTK_BOX(row), mid, TRUE, TRUE, 0);
             gtk_box_pack_start(GTK_BOX(row), plus, FALSE, FALSE, 0);
-            gtk_box_pack_start(GTK_BOX(area), row, FALSE, FALSE, 3);
+            gtk_box_pack_start(GTK_BOX(root), row, FALSE, FALSE, 5);
         };
 
         add_font_row("header", header_font, 1);
         add_font_row("chart", chart_font, 2);
         add_font_row("bottom", bottom_font, 3);
 
-        gtk_box_pack_start(GTK_BOX(area), label("Tap an item row to select it, then use Buy/Sell. Tap the news area to buy street information about a future market event.", 9, true), FALSE, FALSE, 4);
-        GtkWidget* close = button("Close", G_CALLBACK(on_close_dialog), nullptr, 12, 320, 34);
-        g_object_set_data(G_OBJECT(close), "dialog", dialog);
-        gtk_box_pack_start(GTK_BOX(area), close, FALSE, FALSE, 5);
-        gtk_widget_show_all(dialog);
+        gtk_box_pack_start(GTK_BOX(root), hline(), FALSE, FALSE, 4);
+        gtk_box_pack_start(GTK_BOX(root), label("Tap Back to return to the market. Use New Run only when you want to erase the saved run.", 11, true, 0.5f, GTK_JUSTIFY_CENTER), FALSE, FALSE, 4);
+
+        GtkWidget* main_row = gtk_hbox_new(TRUE, 8);
+        gtk_box_pack_start(GTK_BOX(main_row), button("Back", G_CALLBACK(on_show_market), nullptr, 20, -1, 58), TRUE, TRUE, 2);
+        gtk_box_pack_start(GTK_BOX(main_row), button("New Run", G_CALLBACK(on_confirm_new), nullptr, 20, -1, 58), TRUE, TRUE, 2);
+        gtk_box_pack_start(GTK_BOX(main_row), button("Exit", G_CALLBACK(on_exit), nullptr, 20, -1, 58), TRUE, TRUE, 2);
+        gtk_box_pack_start(GTK_BOX(root), main_row, FALSE, FALSE, 8);
+
+        gtk_widget_show_all(window);
     }
 
     void show_police() {
@@ -962,9 +1072,8 @@ public:
     void build_window(int* argc, char*** argv) {
         gtk_init(argc, argv);
 
-        // Kindle Home can remain above ordinary GTK toplevels on newer firmware.
-        // Use a popup/override-redirect window and force it to the full screen.
-        window = gtk_window_new(GTK_WINDOW_POPUP);
+        // Use a normal GTK toplevel for stable touch/click handling, then force it fullscreen and above Home.
+        window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
         g_object_set_data(G_OBJECT(window), "app", this);
         gtk_window_set_title(GTK_WINDOW(window), "L:A_N:application_PC:N_ID:kindledopewars");
         gtk_window_set_decorated(GTK_WINDOW(window), FALSE);
@@ -998,48 +1107,41 @@ public:
     }
 
     static void on_select_item(GtkWidget* w, gpointer data) {
-        GameApp* app = app_from_widget(w);
-        app->selected = clampi(GPOINTER_TO_INT(data), 0, ITEM_COUNT - 1);
-        app->save();
-        app->show_market();
+        app_from_widget(w)->queue_action(ACT_SELECT_ITEM, GPOINTER_TO_INT(data));
     }
 
     static void on_buy(GtkWidget* w, gpointer data) {
-        GameApp* app = app_from_widget(w);
-        app->buy_selected(GPOINTER_TO_INT(data));
+        app_from_widget(w)->queue_action(ACT_BUY, GPOINTER_TO_INT(data));
     }
 
     static void on_sell(GtkWidget* w, gpointer data) {
-        GameApp* app = app_from_widget(w);
-        app->sell_selected(GPOINTER_TO_INT(data));
+        app_from_widget(w)->queue_action(ACT_SELL, GPOINTER_TO_INT(data));
     }
 
     static void on_show_travel(GtkWidget* w, gpointer) {
-        app_from_widget(w)->show_travel();
+        app_from_widget(w)->queue_action(ACT_SHOW_TRAVEL);
     }
 
     static void on_show_bank(GtkWidget* w, gpointer) {
-        app_from_widget(w)->show_bank();
+        app_from_widget(w)->queue_action(ACT_SHOW_BANK);
     }
 
     static void on_show_settings(GtkWidget* w, gpointer) {
-        app_from_widget(w)->show_settings();
+        app_from_widget(w)->queue_action(ACT_SHOW_SETTINGS);
     }
 
     static void on_adjust_font(GtkWidget* w, gpointer data) {
         GameApp* app = app_from_widget(w);
         close_parent_dialog(w);
-        app->adjust_font_setting(GPOINTER_TO_INT(data));
-        app->show_market();
-        app->show_settings();
+        app->queue_action(ACT_ADJUST_FONT, GPOINTER_TO_INT(data));
     }
 
     static void on_show_market(GtkWidget* w, gpointer) {
-        app_from_widget(w)->show_market();
+        app_from_widget(w)->queue_action(ACT_SHOW_MARKET);
     }
 
     static gboolean on_news_tap(GtkWidget* w, GdkEventButton*, gpointer) {
-        app_from_widget(w)->buy_street_tip();
+        app_from_widget(w)->queue_action(ACT_BUY_NEWS);
         return TRUE;
     }
 
@@ -1055,64 +1157,55 @@ public:
     static void on_travel(GtkWidget* w, gpointer data) {
         GameApp* app = app_from_widget(w);
         close_parent_dialog(w);
-        app->travel_to(GPOINTER_TO_INT(data));
+        app->queue_action(ACT_TRAVEL, GPOINTER_TO_INT(data));
     }
 
     static void on_deposit(GtkWidget* w, gpointer data) {
         GameApp* app = app_from_widget(w);
-        long long amount = GPOINTER_TO_INT(data) >= 999999 ? std::max<long long>(0, app->cash) : GPOINTER_TO_INT(data);
         close_parent_dialog(w);
-        app->deposit(amount);
-        app->show_market();
+        app->queue_action(ACT_DEPOSIT, GPOINTER_TO_INT(data));
     }
 
     static void on_withdraw(GtkWidget* w, gpointer data) {
         GameApp* app = app_from_widget(w);
-        long long amount = GPOINTER_TO_INT(data) >= 999999 ? std::max<long long>(0, app->bank) : GPOINTER_TO_INT(data);
         close_parent_dialog(w);
-        app->withdraw(amount);
-        app->show_market();
+        app->queue_action(ACT_WITHDRAW, GPOINTER_TO_INT(data));
     }
 
     static void on_pay_debt(GtkWidget* w, gpointer data) {
         GameApp* app = app_from_widget(w);
-        long long amount = GPOINTER_TO_INT(data) >= 999999 ? std::max<long long>(0, std::min(app->cash, app->debt)) : GPOINTER_TO_INT(data);
         close_parent_dialog(w);
-        app->pay_debt(amount);
-        app->show_market();
+        app->queue_action(ACT_PAY_DEBT, GPOINTER_TO_INT(data));
     }
 
     static void on_borrow(GtkWidget* w, gpointer data) {
         GameApp* app = app_from_widget(w);
         close_parent_dialog(w);
-        app->borrow(GPOINTER_TO_INT(data));
-        app->show_market();
+        app->queue_action(ACT_BORROW, GPOINTER_TO_INT(data));
     }
 
     static void on_fight(GtkWidget* w, gpointer) {
-        app_from_widget(w)->fight_cops();
+        app_from_widget(w)->queue_action(ACT_FIGHT);
     }
 
     static void on_run(GtkWidget* w, gpointer) {
-        app_from_widget(w)->run_from_cops();
+        app_from_widget(w)->queue_action(ACT_RUN);
     }
 
     static void on_accept_offer(GtkWidget* w, gpointer) {
-        app_from_widget(w)->accept_offer();
+        app_from_widget(w)->queue_action(ACT_ACCEPT_OFFER);
     }
 
     static void on_reject_offer(GtkWidget* w, gpointer) {
-        app_from_widget(w)->reject_offer();
+        app_from_widget(w)->queue_action(ACT_REJECT_OFFER);
     }
 
     static void on_confirm_new(GtkWidget* w, gpointer) {
-        app_from_widget(w)->show_new_confirm();
+        app_from_widget(w)->queue_action(ACT_CONFIRM_NEW);
     }
 
     static void on_new_game(GtkWidget* w, gpointer) {
-        GameApp* app = app_from_widget(w);
-        app->new_game();
-        app->show_market();
+        app_from_widget(w)->queue_action(ACT_NEW_GAME);
     }
 
     static void on_exit(GtkWidget* w, gpointer) {
