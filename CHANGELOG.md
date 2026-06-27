@@ -1,4 +1,23 @@
 # Changelog
+
+## 0.1.12 - Remove Mockup Region Colors
+
+- Removed colored backgrounds from the main market UI.
+- Kept the five debug font-size regions: header, stats/location, event/news, chart, and bottom controls.
+- Updated Settings helper text to clarify that colored mockup blocks are layout markers only, not visual styling for the Kindle app.
+- Left the tappable news area, street-tip confirmation, and day-scaling tip price behavior intact.
+
+## 0.1.11 - Colored Region UI / Tip Confirmation
+
+- Rebuilt the main market screen to match the supplied colored-region layout: orange header, green stats/location, yellow event text, purple drug chart, and blue buy/sell/travel/bank controls.
+- Added five Settings font scalers for the colored regions: `header`, `stats`, `event`, `chart`, and `bottom`.
+- Restored New/Settings/Exit to the orange header row with larger fixed tap targets instead of tiny corner controls.
+- Fixed GTK button label font application so button text uses the requested debug size instead of inheriting the oversized default GTK font.
+- Replaced drug item buttons with tappable chart cells so the chart text scales cleanly and does not get inflated by button padding/default fonts.
+- Added a Street Tip confirmation popup with Yes/No buttons when the yellow event area is tapped.
+- Changed street-tip pricing from a flat `$250` to `$250 + $50 per elapsed day`, so information becomes more expensive as the run progresses.
+- Persisted the new `stats` and `event` font sizes in the save file.
+
 ## 0.1.10 - Large Main Menu / Touch Deferral Fix
 
 - Removed the tiny New/Settings/Exit strip from the main market screen.
