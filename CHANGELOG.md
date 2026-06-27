@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.14 - Aggressive Layout Debug Controls
+
+- Added direct `drug row height` debugging separate from chart text size so spacing between buyable drug rows can be compressed or expanded independently.
+- Changed non-font debug controls to move in 5-point increments instead of tiny 1-point adjustments.
+- Expanded layout controls to allow large negative and positive values for aggressive Kindle screen tuning.
+- Added region-height controls for header, stats/location, event/news, chart box, and bottom controls so each main UI section can be resized directly.
+- Changed the drug chart from an expanding leftover-space region to a fixed-height, scrollable chart box controlled by `chart box height`, preventing it from consuming most of the screen by default.
+- Reduced default chart-row spacing and chart-box height so the market table starts from a more compact layout.
+- Added `Export UI` in Settings, writing the current debug values and effective calculated sizes to `/mnt/us/extensions/kindledopewars/data/ui-debug.txt`.
+- Auto-exports UI debug values after every Settings adjustment so the latest tuning is always available even before tapping Export UI.
+
 ## 0.1.13 - Layout Spacing Debug Controls
 
 - Added persistent spacing controls in Settings for `section gap`, `chart gap`, and `bottom gap` so the Kindle UI can be tuned beyond text size alone.
